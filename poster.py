@@ -5,15 +5,13 @@ Generate an SVG poster of Unicode characters.
 from optparse import OptionParser
 from pprint import pprint
 import sys
+
 import icu
 
+from lxml import etree
+
 scripts = (
-    'Latn',
-    'Cyrl',
-    'Hebr',
-    'Arab',
-    'Deva',
-    'Bali',
+    'Goth',
 )
 
 # just use the default locale's ordering
@@ -26,15 +24,27 @@ def get_characters():
     
     assigned = set(icu.UnicodeSet("[[:^gc=Cn:]]")) # all assigned characters
     space = set(icu.UnicodeSet("[[:gc=Z:]]"))
-    control = set(icu.UnicodeSet("[[:gc=C:]]"))
-    admissible = assigned - (space | control)
+    control = set(icu.UnicodeSet("[[:gc=C:]]")) # includes control, surrogates, private use and formatting
+    decomposible = set(icu.UnicodeSet("[[:Decomposition_Type=Canonical:]]"))
+    admissible = assigned - (space | control | decomposible)
     
     chars = set()
     for sc in scripts:
         script = set(icu.UnicodeSet("[[:sc=%s:]]" % sc)) & admissible
         chars |= script
     
-    result = list(chars)
+    result = []
+    
+    for c in chars:
+        # Collator gets indigestion on certain non-BMP python unicode objects
+        uni_c = icu.UnicodeString(c.encode('utf-8'))
+        try:
+            key = collator.getCollationKey(c.encode('utf-8'))
+        except icu.ICUError:
+            pprint((c, uni_c))
+            sys.exit(1)
+        result.append(uni_c)
+    
     result.sort(cmp=collator.compare)
     
     return result
@@ -63,8 +73,12 @@ if __name__ == '__main__':
     else:
         out = open(options.outfile)
     
-    for c in get_characters():
-        out.write(render_cell(c).encode('utf-8') + ' ')
+    svg = etree.Element("svg", width="1024", height="500")
     
-    out.write('\n')
-
+    for c in get_characters():
+        group = etree.SubElement(svg, "g")
+        text = etree.SubElement(group, "text")
+        text.text = unicode(c)
+    
+    out.write(etree.tostring(svg, pretty_print=True, xml_declaration=True, encoding='utf-8'))
+    
