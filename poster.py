@@ -10,28 +10,82 @@ from pprint import pprint
 import re
 import sys
 
+import cairo
+import pango
+import pangocairo
+
 from lxml import etree, objectify
 
-SVG_NAMESPACE = 'http://www.w3.org/2000/svg'
-
-POSTER_HEIGHT = D(3) * 12 * 300
+INCH = D('300')
+POINT = INCH / D(72)
+POSTER_HEIGHT = D(36) * INCH
 #POSTER_HEIGHT = D(1000)
 CELL_ASPECT = (D(3), D(4))
-ROWS = 175
+ROWS = (POSTER_HEIGHT / (D('.25') * INCH)).quantize(1, rounding=ROUND_DOWN) # each cell will be at least 1/2" tall
 #ROWS = 20
 CELL_HEIGHT = POSTER_HEIGHT / ROWS
 CELL_WIDTH = (CELL_HEIGHT / CELL_ASPECT[1]) * CELL_ASPECT[0]
 
+#GENERIC_BASE = u"\u25cc"
+GENERIC_BASE = u""
+
 UCD_PATH = "../ucd/ucd.all.flat.xml"
 DUCET_PATH = "../ucd/allkeys.txt"
 
-scripts = (
-    'Arab',
-    'Latn',
-    'Hebr',
-    'Grek',
-    'Zyyy',
+SCRIPTS = (
+    "Mand", # 15x
+
+    "Brah", # 30x
+    "Kthi", # 31x
+    "Lepc", # 33x
+    "Bali Sund Batk", # 36x
+
+    "Bamu", # 4xx
+
+    "Hani", # 5xx
+    
+    "Zyyy", # 9xx
 )
+
+(
+    "Xsux Xpeo Ugar Egyp", # 0xx
+
+    "Sarb", # 10x
+    "Phnx Lydi", # 11x
+    "Tfng Samr Armi Hebr", # 12x
+    "Prti Phli Avst Syrc", # 13x
+    "Mand Mong", # 15x
+    "Arab Nkoo", # 16x
+    "Thaa Orkh", # 17x
+
+    "Grek Cari Lyci Copt Goth", # 20x
+    "Ital Runr Ogam Latn", # 21x
+    "Cyrl Glag", # 22x
+    "Armn", # 23x
+    "Geor", # 24x
+    "Dsrt", # 25x
+    "Osma Olck", # 26x
+    "Shaw Bopo Hang", # 28x
+
+    "Brah Khar", # 30x
+    "Guru Deva Sylo Kthi", # 31x
+    "Gujr Beng Orya", # 32x
+    "Tibt Phag Lepc Limb Mtei", # 33x
+    "Telu Saur Knda Taml Mlym Sinh", # 34x
+    "Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
+    "Bali Java Sund Rjng Batk Bugi", # 36x
+    "Tglg Hano Buhd Tagb", # 37x
+    "Lisu", # 39x
+    
+    "Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
+    
+    "Hani Brai", # 5xx
+    
+    "Zinh Zyyy", # 9xx
+)
+
+SCRIPTS = ' '.join(SCRIPTS).strip().split()
+SKIP_SCRIPTS = True
 
 class UCDTarget(object):
     '''\
@@ -41,7 +95,7 @@ class UCDTarget(object):
     
     UCD_NS = 'http://www.unicode.org/ns/2003/ucd/1.0'
     UCD = '{%s}' % UCD_NS
-    Char = namedtuple('char', 'dt gc sc ducet_key')
+    Char = namedtuple('char', 'ccc dt gc sc ducet_key')
     
     def __init__(self):
         self.parents = []
@@ -84,6 +138,7 @@ class UCDTarget(object):
             pprint((codepoint, attributes))
             sys.exit()
         props = self.Char(
+            attributes['ccc'],
             attributes['dt'],
             attributes['gc'],
             attributes['sc'],
@@ -189,6 +244,7 @@ def _add_uca_keys():
                 sort_key += k['weights'][l]
         
         UCD[char] = UCDTarget.Char(
+            UCD[char].ccc,
             UCD[char].dt,
             UCD[char].gc,
             UCD[char].sc,
@@ -242,7 +298,7 @@ def icu_get_characters():
     
     return result
 
-def ucd_get_characters():
+def ucd_get_characters(scripts=None):
     
     result = []
     
@@ -261,8 +317,9 @@ def ucd_get_characters():
         if props.dt == 'can':
             continue
         # skip scripts we don't care about
-        if props.sc not in scripts:
-            continue
+        if not scripts is None:
+            if props.sc not in scripts:
+                continue
         
         result.append(unichr(p))
     
@@ -272,7 +329,7 @@ def ucd_get_characters():
 
 get_characters = ucd_get_characters
 
-def add_cell(character, group):
+def add_big_cell(character, group):
     point = ord(character[0])
 
     if UCD[point].dt != 'none':
@@ -358,53 +415,84 @@ def add_cell(character, group):
     sc.set('font-family', 'sans-serif')
     sc.set('text-anchor', 'end')
     sc.text = UCD[point].sc
-    
-if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option(
-        '-u', '--ucd',
-        dest= 'ucd',
-        help= "path of the Unicode Character Database to use. defaults to 'ucd'.",
-        default="ucd",
-    )
-    parser.add_option(
-        '-o', '--outfile',
-        dest= 'outfile',
-        help= "output the poster as FILE. defaults to STDOUT.",
-        metavar="FILE",
-    )
-    (options, args) = parser.parse_args()
-    
-    if options.outfile is None:
-        out = sys.stdout
-    else:
-        out = open(options.outfile, 'wb')
-    
-    SVG = "{%s}" % SVG_NAMESPACE
-    NSMAP = {
-        None: SVG_NAMESPACE,
-    }
-    
-    chars = get_characters()
 
-    characters = D(len(chars))
+def add_small_cell(character, group):
+    point = ord(character[0])
+
+    if UCD[point].dt != 'none':
+        dt = etree.SubElement(group, SVG + 'text',
+            x= unicode(.2),
+            y= unicode(.6),
+            fill= "#888888",
+        )
+        dt.set('font-size', '.5')
+        dt.set('font-family', 'sans-serif')
+        dt.set('text-anchor', 'start')
+        dt.text = UCD[point].dt
+
+        strike = etree.SubElement(group, SVG + 'line',
+            x1= "3",
+            y1= "0",
+            x2= "0",
+            y2= "4",
+            stroke= "#aaaaaa",
+        )
+        strike.set('stroke-width', '.05')
+
+    rect = etree.SubElement(group, SVG + "rect",
+        x="0",
+        y="0",
+        width="3",
+        height="4",
+        fill="none",
+        stroke="#aaaaaa",
+    )
+    rect.set('stroke-width', '.1')
+
+    text = etree.SubElement(group, SVG + "text",
+        x="1.5",
+        y="3",
+    )
+    text.set('font-size', '3')
+    text.set('text-anchor', 'middle')
+    text.text = unicode(character)
+
+    gc = etree.SubElement(group, SVG + 'text',
+        x= unicode(0 + .2),
+        y= unicode(4 - .2),
+        fill= "#888888",
+    )
+    gc.set('font-size', '.5')
+    gc.set('font-family', 'sans-serif')
+    gc.set('text-anchor', 'start')
+    gc.text = UCD[point].gc
     
-    height = POSTER_HEIGHT
-    rows = ROWS
-    columns = (characters / rows).quantize(1, rounding=ROUND_UP)
-    width = (columns * CELL_WIDTH).quantize(1, rounding=ROUND_UP)
-    area = width * height
-    cell_width = CELL_WIDTH
-    cell_height = CELL_HEIGHT
-    cell_area = CELL_WIDTH * CELL_HEIGHT
-    
-    print "poster: %d x %d = %d" % (width, height, area)
-    print "poster: %d' x %d'" % (width / (12 * 300), height / (12 * 300))
-    print "cell: %f x %f = %f" % (cell_width, cell_height, cell_area)
-    print "chars: %d x %d = %d, %d" % (columns, rows, columns * rows, len(chars))
-    print "width: %d x %f = %f, %d" % (columns, cell_width, cell_width * columns, width)
-    print "height: %d x %f = %f, %d" % (rows, cell_height, cell_height * rows, height)
-    
+    sc = etree.SubElement(group, SVG + 'text',
+        x= unicode(3 - .2),
+        y= unicode(0 + .6),
+        fill= "#888888",
+    )
+    sc.set('font-size', '.5')
+    sc.set('font-family', 'sans-serif')
+    sc.set('text-anchor', 'end')
+    sc.text = UCD[point].sc
+
+    cp = etree.SubElement(group, SVG + 'text',
+        x= unicode(3 - .2),
+        y= unicode(4 - .2),
+        fill= "#888888",
+    )
+    cp.set('font-size', '.5')
+    cp.set('font-family', 'monospace')
+    cp.set('text-anchor', 'end')
+    pad = '4'
+    if point > 0xffff:
+        pad = '6'
+    cp.text = ('%0' + pad + 'X') % point
+
+add_svg_cell = add_small_cell
+
+def render_svg(out, chars, width, height, cell_width, cell_height):
     svg = etree.Element(SVG + "svg",
         nsmap=NSMAP,
         width=unicode(width),
@@ -428,12 +516,201 @@ if __name__ == '__main__':
             row * CELL_ASPECT[1],
         )
         group = etree.SubElement(cells, SVG + "g", transform=translation)
-        add_cell(c, group)
+        add_svg_cell(c, group)
         
         col += 1
         if col == columns:
             col = 0
             row += 1
     
-    out.write(etree.tostring(svg, pretty_print=True, xml_declaration=True, encoding='utf-8'))
+    out.write(etree.tostring(svg, pretty_print=True, xml_declaration=True, encoding='utf-8'))    
+
+def draw_small_cell(character, cairo_context):
+    c, cr = character, cairo_context
+    pcr = pangocairo.CairoContext(cr)
+    
+    point = ord(character[0])
+    if UCD[point].ccc != 0:
+        character = GENERIC_BASE + character
+    
+    cr.set_source_rgb(0, 0, 0)
+    
+    if UCD[point].dt != 'none':
+        #dt = etree.SubElement(group, SVG + 'text',
+        #    x= unicode(.2),
+        #   y= unicode(.6),
+        #    fill= "#888888",
+        #)
+        #dt.set('font-size', '.5')
+        #dt.set('font-family', 'sans-serif')
+        #dt.set('text-anchor', 'start')
+        #dt.text = UCD[point].dt
+
+        cr.save()
+        cr.set_line_width(.05)
+        cr.set_source_rgb(.6, .6, .6)
+        cr.new_path()
+        cr.move_to(3, 0)
+        cr.line_to(0, 4)
+        cr.stroke()
+        cr.restore()
+
+    cr.save()
+    cr.set_line_width(.1)
+    cr.set_source_rgb(.6, .6, .6)
+    cr.rectangle(0, 0, 3, 4)
+    cr.stroke()
+    cr.restore()
+
+    cr.save()
+    text = pcr.create_layout()
+    text.set_font_description(pango.FontDescription('2'))
+    text.set_alignment(pango.ALIGN_CENTER)
+    text.set_width(-1)
+    text.set_text(character)
+    w, h = text.get_size()
+    w = D(w) / D(pango.SCALE)
+    h = D(h) / D(pango.SCALE)
+    if w * h > (3 * 4) * D(2):
+        #pprint(("big character", point, character, w, h, w * h))
+        pass
+    else:
+        cr.move_to(D('1.5') - (w / 2), 2 - (h / 2))
+        pcr.show_layout(text)
+    cr.restore()
+    
+    #gc = etree.SubElement(group, SVG + 'text',
+    #    x= unicode(0 + .2),
+    #    y= unicode(4 - .2),
+    #    fill= "#888888",
+    #)
+    #gc.set('font-size', '.5')
+    #gc.set('font-family', 'sans-serif')
+    #gc.set('text-anchor', 'start')
+    #gc.text = UCD[point].gc
+    cr.save()
+    cr.set_source_rgb(.4, .4, .4)
+    gc = pcr.create_layout()
+    gc.set_font_description(pango.FontDescription('Sans .5'))
+    gc.set_alignment(pango.ALIGN_LEFT)
+    gc.set_width(-1)
+    gc.set_text(UCD[point].gc)
+    w, h = gc.get_size()
+    w = D(w) / D(pango.SCALE)
+    h = D(h) / D(pango.SCALE)
+    cr.move_to((0 + D('.1')), (4 - D('.1')) - h)
+    pcr.show_layout(gc)
+    cr.restore()
+    
+    cr.save()
+    cr.set_source_rgb(.4, .4, .4)
+    sc = pcr.create_layout()
+    sc.set_font_description(pango.FontDescription('Sans .5'))
+    sc.set_alignment(pango.ALIGN_RIGHT)
+    sc.set_width(-1)
+    sc.set_text(UCD[point].sc)
+    w, h = sc.get_size()
+    w = D(w) / D(pango.SCALE)
+    h = D(h) / D(pango.SCALE)
+    cr.move_to((3 - D('.1')) - w, (0 + D('.1')))
+    pcr.show_layout(sc)
+    cr.restore()
+
+    cr.save()
+    cr.set_source_rgb(.4, .4, .4)
+    cp = pcr.create_layout()
+    cp.set_font_description(pango.FontDescription('Monospace .4'))
+    cp.set_alignment(pango.ALIGN_RIGHT)
+    cp.set_width(-1)
+    pad = '4'
+    if point > 0xffff:
+        pad = '6'
+    cp.set_text((u'%0' + pad + 'X') % point)
+    w, h = cp.get_size()
+    w = D(w) / D(pango.SCALE)
+    h = D(h) / D(pango.SCALE)
+    cr.move_to((3 - D('.1')) - w, (4 - D('.1')) - h)
+    pcr.show_layout(cp)
+    cr.restore()
+
+def render_cairo(out, chars, width, height, cell_width, cell_height):
+    
+    s = cairo.PDFSurface(out, width / POINT, height / POINT)
+    
+    cr = cairo.Context(s)
+    # scale to pixels
+    cr.scale(1 / POINT, 1 / POINT)
+    
+    # white background
+    cr.set_source_rgb(1, 1, 1)
+    cr.paint()
+    
+    row = 0
+    col = 0
+    cr.scale(
+        cell_width / CELL_ASPECT[0],
+        cell_height / CELL_ASPECT[1],
+    )
+    for i, c in enumerate(chars):
+        if not i % 1000:
+            print "%d%%" % (i * 100.0 / len(chars))
+        cr.save()
+        cr.translate(
+            col * CELL_ASPECT[0],
+            row * CELL_ASPECT[1],
+        )
+        draw_small_cell(c, cr)
+        cr.restore()
+        
+        col += 1
+        if col == columns:
+            col = 0
+            row += 1
+
+render = render_cairo
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option(
+        '-u', '--ucd',
+        dest= 'ucd',
+        help= "path of the Unicode Character Database to use. defaults to 'ucd'.",
+        default="ucd",
+    )
+    parser.add_option(
+        '-o', '--outfile',
+        dest= 'outfile',
+        help= "output the poster as FILE. defaults to STDOUT.",
+        metavar="FILE",
+    )
+    (options, args) = parser.parse_args()
+    
+    filename = options.outfile
+    if options.outfile is None:
+        filename = 'all.pdf'
+    out = open(filename, 'wb')
+    
+    chars = get_characters()
+
+    characters = D(len(chars))
+    
+    height = POSTER_HEIGHT
+    rows = ROWS
+    columns = (characters / rows).quantize(1, rounding=ROUND_UP)
+    width = (columns * CELL_WIDTH).quantize(1, rounding=ROUND_UP)
+    area = width * height
+    cell_width = CELL_WIDTH
+    cell_height = CELL_HEIGHT
+    cell_area = CELL_WIDTH * CELL_HEIGHT
+    
+    print "poster: %d x %d = %d" % (width, height, area)
+    print "poster: %d\" x %d\" = %f sq/ ft." % (width / INCH, height / INCH, (width * height) / ((12 ** 2) * (INCH ** 2)))
+    print "cell: %f x %f = %f" % (cell_width, cell_height, cell_area)
+    print "chars: %d x %d = %d, %d" % (columns, rows, columns * rows, len(chars))
+    print "width: %d x %f = %f, %d" % (columns, cell_width, cell_width * columns, width)
+    print "height: %d x %f = %f, %d" % (rows, cell_height, cell_height * rows, height)
+    
+    render(out, chars, width, height, cell_width, cell_height)
+    
+    out.close()
     
