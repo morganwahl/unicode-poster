@@ -1,5 +1,5 @@
 '''\
-Generate an SVG poster of Unicode characters.
+Generate a poster of Unicode characters.
 '''
 
 from collections import namedtuple
@@ -17,8 +17,8 @@ import pangocairo
 from lxml import etree, objectify
 
 INCH = D('300')
-POINT = INCH / D(72)
-POSTER_HEIGHT = D(36) * INCH
+POINT = INCH / D(72) # postscript DPI
+POSTER_HEIGHT = D(8) * INCH
 #POSTER_HEIGHT = D(1000)
 CELL_ASPECT = (D(3), D(4))
 ROWS = (POSTER_HEIGHT / (D('.25') * INCH)).quantize(1, rounding=ROUND_DOWN) # each cell will be at least 1/2" tall
@@ -33,59 +33,43 @@ UCD_PATH = "../ucd/ucd.all.flat.xml"
 DUCET_PATH = "../ucd/allkeys.txt"
 
 SCRIPTS = (
-    "Mand", # 15x
+    #"Xsux Xpeo Ugar Egyp", # 0xx
 
-    "Brah", # 30x
-    "Kthi", # 31x
-    "Lepc", # 33x
-    "Bali Sund Batk", # 36x
+    #"Sarb", # 10x
+    #"Phnx Lydi", # 11x
+    #"Tfng Samr Armi Hebr", # 12x
+    #"Prti Phli Avst Syrc", # 13x
+    #"Mand Mong", # 15x
+    #"Arab Nkoo", # 16x
+    #"Thaa Orkh", # 17x
 
-    "Bamu", # 4xx
-
-    "Hani", # 5xx
-    
-    "Zyyy", # 9xx
-)
-
-(
-    "Xsux Xpeo Ugar Egyp", # 0xx
-
-    "Sarb", # 10x
-    "Phnx Lydi", # 11x
-    "Tfng Samr Armi Hebr", # 12x
-    "Prti Phli Avst Syrc", # 13x
-    "Mand Mong", # 15x
-    "Arab Nkoo", # 16x
-    "Thaa Orkh", # 17x
-
-    "Grek Cari Lyci Copt Goth", # 20x
+    #"Grek Cari Lyci Copt Goth", # 20x
     "Ital Runr Ogam Latn", # 21x
-    "Cyrl Glag", # 22x
-    "Armn", # 23x
-    "Geor", # 24x
-    "Dsrt", # 25x
-    "Osma Olck", # 26x
-    "Shaw Bopo Hang", # 28x
+    #"Cyrl Glag", # 22x
+    #"Armn", # 23x
+    #"Geor", # 24x
+    #"Dsrt", # 25x
+    #"Osma Olck", # 26x
+    #"Shaw Bopo Hang", # 28x
 
-    "Brah Khar", # 30x
-    "Guru Deva Sylo Kthi", # 31x
-    "Gujr Beng Orya", # 32x
-    "Tibt Phag Lepc Limb Mtei", # 33x
-    "Telu Saur Knda Taml Mlym Sinh", # 34x
-    "Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
-    "Bali Java Sund Rjng Batk Bugi", # 36x
-    "Tglg Hano Buhd Tagb", # 37x
-    "Lisu", # 39x
+    #"Brah Khar", # 30x
+    #"Guru Deva Sylo Kthi", # 31x
+    #"Gujr Beng Orya", # 32x
+    #"Tibt Phag Lepc Limb Mtei", # 33x
+    #"Telu Saur Knda Taml Mlym Sinh", # 34x
+    #"Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
+    #"Bali Java Sund Rjng Batk Bugi", # 36x
+    #"Tglg Hano Buhd Tagb", # 37x
+    #"Lisu", # 39x
     
-    "Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
+    #"Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
     
-    "Hani Brai", # 5xx
+    #"Hani Brai", # 5xx
     
-    "Zinh Zyyy", # 9xx
+    #"Zinh Zyyy", # 9xx
 )
 
 SCRIPTS = ' '.join(SCRIPTS).strip().split()
-SKIP_SCRIPTS = True
 
 class UCDTarget(object):
     '''\
@@ -253,6 +237,8 @@ def _add_uca_keys():
         
     ducet.close()
 
+UCD = None
+
 print "parsing UCD from %s" % UCD_PATH
 
 ucd_parser = etree.XMLParser(target=UCDTarget())
@@ -298,7 +284,7 @@ def icu_get_characters():
     
     return result
 
-def ucd_get_characters(scripts=None):
+def ucd_get_characters():
     
     result = []
     
@@ -317,8 +303,8 @@ def ucd_get_characters(scripts=None):
         if props.dt == 'can':
             continue
         # skip scripts we don't care about
-        if not scripts is None:
-            if props.sc not in scripts:
+        if not SCRIPTS is None:
+            if props.sc not in SCRIPTS:
                 continue
         
         result.append(unichr(p))
@@ -680,7 +666,7 @@ if __name__ == '__main__':
     parser.add_option(
         '-o', '--outfile',
         dest= 'outfile',
-        help= "output the poster as FILE. defaults to STDOUT.",
+        help= "output the poster as FILE. defaults to 'all.pdf'.",
         metavar="FILE",
     )
     (options, args) = parser.parse_args()
