@@ -33,41 +33,43 @@ CELL_WIDTH = (CELL_HEIGHT / CELL_ASPECT[1]) * CELL_ASPECT[0]
 #GENERIC_BASE = u"\u25cc"
 GENERIC_BASE = u""
 
+# TODO get this from the UCD
+# TODO what's up with scripts that have no characters asssigned?
 SCRIPTS = (
-    #"Xsux Xpeo Ugar Egyp", # 0xx
+    "Xsux Xpeo Ugar Egyp", # 0xx
 
-    #"Sarb", # 10x
-    #"Phnx Lydi", # 11x
-    #"Tfng Samr Armi Hebr", # 12x
-    #"Prti Phli Avst Syrc", # 13x
-    #"Mand Mong", # 15x
-    #"Arab Nkoo", # 16x
-    #"Thaa Orkh", # 17x
+    "Sarb", # 10x
+    "Phnx Lydi", # 11x
+    "Tfng Samr Armi Hebr", # 12x
+    "Prti Phli Avst Syrc", # 13x
+    "Mand Mong", # 15x
+    "Arab Nkoo", # 16x
+    "Thaa Orkh", # 17x
 
-    #"Grek Cari Lyci Copt Goth", # 20x
+    "Grek Cari Lyci Copt Goth", # 20x
     "Ital Runr Ogam Latn", # 21x
-    #"Cyrl Glag", # 22x
-    #"Armn", # 23x
-    #"Geor", # 24x
-    #"Dsrt", # 25x
-    #"Osma Olck", # 26x
-    #"Shaw Bopo Hang", # 28x
+    "Cyrl Glag", # 22x
+    "Armn", # 23x
+    "Geor", # 24x
+    "Dsrt", # 25x
+    "Osma Olck", # 26x
+    "Shaw Bopo Hang", # 28x
 
-    #"Brah Khar", # 30x
-    #"Guru Deva Sylo Kthi", # 31x
-    #"Gujr Beng Orya", # 32x
-    #"Tibt Phag Lepc Limb Mtei", # 33x
-    #"Telu Saur Knda Taml Mlym Sinh", # 34x
-    #"Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
-    #"Bali Java Sund Rjng Batk Bugi", # 36x
-    #"Tglg Hano Buhd Tagb", # 37x
-    #"Lisu", # 39x
+    "Brah Khar", # 30x
+    "Guru Deva Sylo Kthi", # 31x
+    "Gujr Beng Orya", # 32x
+    "Tibt Phag Lepc Limb Mtei", # 33x
+    "Telu Saur Knda Taml Mlym Sinh", # 34x
+    "Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
+    "Bali Java Sund Rjng Batk Bugi", # 36x
+    "Tglg Hano Buhd Tagb", # 37x
+    "Lisu", # 39x
     
-    #"Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
+    "Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
     
-    #"Hani Brai", # 5xx
+    "Hani Brai", # 5xx
     
-    #"Zinh Zyyy", # 9xx
+    "Zinh Zyyy", # 9xx
 )
 
 SCRIPTS = ' '.join(SCRIPTS).strip().split()
@@ -273,7 +275,7 @@ def parse_ucd(ucd_path, ducet_path):
 
     return ucd_data
 
-def ucd_get_characters(UCD):
+def ucd_get_characters(UCD, scripts=None):
     
     result = []
     
@@ -292,8 +294,8 @@ def ucd_get_characters(UCD):
         if props.dt == 'can':
             continue
         # skip scripts we don't care about
-        if not SCRIPTS is None:
-            if props.sc not in SCRIPTS:
+        if not scripts is None:
+            if props.sc not in scripts:
                 continue
         
         result.append(unichr(p))
@@ -467,11 +469,18 @@ if __name__ == '__main__':
         help= "output the poster as FILE. defaults to 'poster.pdf'.",
         metavar="FILE",
     )
+    parser.add_argument(
+        '-s, --scripts',
+        dest= 'scripts',
+        action= 'append',
+        choices= SCRIPTS,
+        help= 'which scripts to cover',
+    )
     args = parser.parse_args()
     
     UCD = parse_ucd(args.ucd_path, args.ducet_path)
 
-    chars = ucd_get_characters(UCD)
+    chars = ucd_get_characters(UCD, args.scripts)
 
     characters = D(len(chars))
     
