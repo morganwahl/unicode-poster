@@ -468,7 +468,7 @@ if __name__ == '__main__':
         dest= 'scripts',
         action= 'append',
         choices= SCRIPTS,
-        help= 'which scripts to cover',
+        help= 'which scripts to cover. defaults to all of them.',
     )
     parser.add_argument(
         '-t, --height',
