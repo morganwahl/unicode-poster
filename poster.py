@@ -451,8 +451,9 @@ if __name__ == '__main__':
     parser.add_argument(
         '-u, --ucd',
         dest= 'ucd_path',
-        default= u'ucd',
-        help= "path of the Unicode Character Database to use. defaults to 'ucd'.",
+        default= u'ucd.all.flat.xml',
+        help= "path of the XML Unicode Character Database to use. defaults to 'ucd.all.flat.xml'.",
+    )
     parser.add_argument(
         '-d, --ducet',
         dest= 'ducet_path',
