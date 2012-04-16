@@ -276,8 +276,6 @@ def ucd_get_characters():
     
     return result
 
-get_characters = ucd_get_characters
-
 def draw_small_cell(character, cairo_context):
     c, cr = character, cairo_context
     pcr = pangocairo.CairoContext(cr)
@@ -443,7 +441,7 @@ if __name__ == '__main__':
         filename = 'all.pdf'
     out = open(filename, 'wb')
     
-    chars = get_characters()
+    chars = ucd_get_characters()
 
     characters = D(len(chars))
     
