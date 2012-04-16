@@ -16,7 +16,7 @@ import cairo
 import pango
 import pangocairo
 
-from lxml import etree, objectify
+from lxml import etree
 
 UCD_CACHE_PATH = 'ucd-cache'
 
