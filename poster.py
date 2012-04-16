@@ -28,11 +28,11 @@ CELL_ASPECT = (D(3), D(4))
 GENERIC_BASE = u""
 
 # TODO get this from the UCD
-# TODO what's up with scripts that have no characters asssigned?
+# Up-to-date as of 2012-04-16
 SCRIPTS = (
     "Xsux Xpeo Ugar Egyp", # 0xx
 
-    "Sarb", # 10x
+    "Mero Merc Sarb", # 10x
     "Phnx Lydi", # 11x
     "Tfng Samr Armi Hebr", # 12x
     "Prti Phli Avst Syrc", # 13x
@@ -47,17 +47,17 @@ SCRIPTS = (
     "Geor", # 24x
     "Dsrt", # 25x
     "Osma Olck", # 26x
-    "Shaw Bopo Hang", # 28x
+    "Shaw Plrd Bopo Hang", # 28x
 
     "Brah Khar", # 30x
-    "Guru Deva Sylo Kthi", # 31x
-    "Gujr Beng Orya", # 32x
+    "Guru Deva Sylo Kthi Shrd", # 31x
+    "Gujr Takr Beng Orya", # 32x
     "Tibt Phag Lepc Limb Mtei", # 33x
-    "Telu Saur Knda Taml Mlym Sinh", # 34x
+    "Telu Saur Knda Taml Mlym Sinh Cakm", # 34x
     "Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
     "Bali Java Sund Rjng Batk Bugi", # 36x
     "Tglg Hano Buhd Tagb", # 37x
-    "Lisu", # 39x
+    "Sora Lisu", # 39x
     
     "Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
     
