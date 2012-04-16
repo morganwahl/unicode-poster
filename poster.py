@@ -22,13 +22,7 @@ UCD_CACHE_PATH = 'ucd-cache'
 
 INCH = D('300')
 POINT = INCH / D(72) # postscript DPI
-POSTER_HEIGHT = D(8) * INCH
-#POSTER_HEIGHT = D(1000)
 CELL_ASPECT = (D(3), D(4))
-ROWS = (POSTER_HEIGHT / (D('.25') * INCH)).quantize(1, rounding=ROUND_DOWN) # each cell will be at least 1/2" tall
-#ROWS = 20
-CELL_HEIGHT = POSTER_HEIGHT / ROWS
-CELL_WIDTH = (CELL_HEIGHT / CELL_ASPECT[1]) * CELL_ASPECT[0]
 
 #GENERIC_BASE = u"\u25cc"
 GENERIC_BASE = u""
@@ -476,6 +470,13 @@ if __name__ == '__main__':
         choices= SCRIPTS,
         help= 'which scripts to cover',
     )
+    parser.add_argument(
+        '-t, --height',
+        dest= 'height',
+        type=D,
+        default= D(36),
+        help= 'height of the poster, in inches. defaults to 36.',
+    )
     args = parser.parse_args()
     
     UCD = parse_ucd(args.ucd_path, args.ducet_path)
@@ -484,14 +485,15 @@ if __name__ == '__main__':
 
     characters = D(len(chars))
     
-    height = POSTER_HEIGHT
-    rows = ROWS
+    height = args.height * INCH
+    rows = (height / (D('.25') * INCH)).quantize(1, rounding=ROUND_DOWN) # each cell will be at least 1/2" tall
+    cell_height = height / rows
+    cell_width = (cell_height / CELL_ASPECT[1]) * CELL_ASPECT[0]
+
     columns = (characters / rows).quantize(1, rounding=ROUND_UP)
-    width = (columns * CELL_WIDTH).quantize(1, rounding=ROUND_UP)
+    width = (columns * cell_width).quantize(1, rounding=ROUND_UP)
     area = width * height
-    cell_width = CELL_WIDTH
-    cell_height = CELL_HEIGHT
-    cell_area = CELL_WIDTH * CELL_HEIGHT
+    cell_area = cell_width * cell_height
     
     print "poster: %d x %d = %d" % (width, height, area)
     print "poster: %d\" x %d\" = %f sq/ ft." % (width / INCH, height / INCH, (width * height) / ((12 ** 2) * (INCH ** 2)))
