@@ -460,14 +460,14 @@ if __name__ == '__main__':
     parser.add_option(
         '-o', '--outfile',
         dest= 'outfile',
-        help= "output the poster as FILE. defaults to 'all.pdf'.",
+        help= "output the poster as FILE. defaults to 'poster.pdf'.",
         metavar="FILE",
     )
     (options, args) = parser.parse_args()
     
     filename = options.outfile
     if options.outfile is None:
-        filename = 'all.pdf'
+        filename = 'poster.pdf'
     out = open(filename, 'wb')
     
     UCD = parse_ucd()
