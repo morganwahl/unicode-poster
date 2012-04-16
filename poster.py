@@ -247,45 +247,6 @@ ucd_parser = etree.XMLParser(target=UCDTarget())
 UCD = etree.XML(open(UCD_PATH).read(), ucd_parser)
 _add_uca_keys()
 
-def icu_get_characters():
-    '''\
-    Returns an iterable of codepoints, in order.
-    '''
-    
-    import icu
-
-    print "using ICU for Unicode version %s" % icu.UNICODE_VERSION
-
-    # just use the default locale's ordering
-    collator = icu.Collator.createInstance()
-
-    assigned = set(icu.UnicodeSet("[[:^gc=Cn:]]")) # all assigned characters
-    space = set(icu.UnicodeSet("[[:gc=Z:]]"))
-    control = set(icu.UnicodeSet("[[:gc=C:]]")) # includes control, surrogates, private use and formatting
-    decomposible = set(icu.UnicodeSet("[[:Decomposition_Type=Canonical:]]"))
-    admissible = assigned - (space | control | decomposible)
-    
-    chars = set()
-    for sc in scripts:
-        script = set(icu.UnicodeSet("[[:sc=%s:]]" % sc)) & admissible
-        chars |= script
-    
-    result = []
-    
-    for c in admissible:
-        # Collator gets indigestion on certain non-BMP python unicode objects
-        uni_c = icu.UnicodeString(c.encode('utf-8'))
-        try:
-            key = collator.getCollationKey(c.encode('utf-8'))
-        except icu.ICUError:
-            pprint((c, uni_c))
-            sys.exit(1)
-        result.append(uni_c)
-    
-    result.sort(cmp=collator.compare)
-    
-    return result
-
 def ucd_get_characters():
     
     result = []
