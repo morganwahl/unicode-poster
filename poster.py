@@ -33,7 +33,6 @@ CELL_WIDTH = (CELL_HEIGHT / CELL_ASPECT[1]) * CELL_ASPECT[0]
 #GENERIC_BASE = u"\u25cc"
 GENERIC_BASE = u""
 
-UCD_PATH = "../ucd/ucd.all.flat.xml"
 DUCET_PATH = "../ucd/allkeys.txt"
 
 SCRIPTS = (
@@ -249,7 +248,7 @@ def _add_uca_keys(UCD):
         
     ducet.close()
 
-def parse_ucd():
+def parse_ucd(ucd_path):
 
     ucd_data = None
     try:
@@ -264,10 +263,10 @@ def parse_ucd():
         print "can't read existing UCD cache file"
     
     if ucd_data is None:
-        print "parsing UCD from %s" % UCD_PATH
+        print "parsing UCD from %s" % ucd_path
 
         ucd_parser = etree.XMLParser(target=UCDTarget())
-        ucd_data = etree.XML(open(UCD_PATH).read(), ucd_parser)
+        ucd_data = etree.XML(open(ucd_path).read(), ucd_parser)
         _add_uca_keys(ucd_data)
         
         with open(UCD_CACHE_PATH, 'wb') as ucd_cache:
@@ -466,7 +465,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     
-    UCD = parse_ucd()
+    UCD = parse_ucd(args.ucd_path)
 
     chars = ucd_get_characters(UCD)
 
