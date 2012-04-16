@@ -6,11 +6,11 @@ Generate a poster of Unicode characters.
 
 from decimal import Decimal as D
 from decimal import ROUND_UP, ROUND_DOWN
-from optparse import OptionParser
 from pprint import pprint
 import re
 import sys
 import pickle
+import argparse
 
 import cairo
 import pango
@@ -450,25 +450,21 @@ def render_cairo(out, chars, width, height, cell_width, cell_height):
 render = render_cairo
 
 if __name__ == '__main__':
-    parser = OptionParser()
-    parser.add_option(
-        '-u', '--ucd',
-        dest= 'ucd',
+    parser = argparse.ArgumentParser(description=u'Generate a poster for all or some of Unicode')
+    parser.add_argument(
+        '-u, --ucd',
+        dest= 'ucd_path',
+        default= u'ucd',
         help= "path of the Unicode Character Database to use. defaults to 'ucd'.",
-        default="ucd",
     )
-    parser.add_option(
-        '-o', '--outfile',
+    parser.add_argument(
+        '-o, --outfile',
         dest= 'outfile',
+        default= u'poster.pdf',
         help= "output the poster as FILE. defaults to 'poster.pdf'.",
         metavar="FILE",
     )
-    (options, args) = parser.parse_args()
-    
-    filename = options.outfile
-    if options.outfile is None:
-        filename = 'poster.pdf'
-    out = open(filename, 'wb')
+    args = parser.parse_args()
     
     UCD = parse_ucd()
 
@@ -492,7 +488,6 @@ if __name__ == '__main__':
     print "width: %d x %f = %f, %d" % (columns, cell_width, cell_width * columns, width)
     print "height: %d x %f = %f, %d" % (rows, cell_height, cell_height * rows, height)
     
-    render(out, chars, width, height, cell_width, cell_height)
-    
-    out.close()
-    
+    with open(args.outfile, 'wb') as out:
+        render(out, chars, width, height, cell_width, cell_height)
+
