@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 '''\
 Generate a poster of Unicode characters.
 '''
