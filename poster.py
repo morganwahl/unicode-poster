@@ -4,19 +4,21 @@
 Generate a poster of Unicode characters.
 '''
 
-from collections import namedtuple
 from decimal import Decimal as D
 from decimal import ROUND_UP, ROUND_DOWN
 from optparse import OptionParser
 from pprint import pprint
 import re
 import sys
+import pickle
 
 import cairo
 import pango
 import pangocairo
 
 from lxml import etree, objectify
+
+UCD_CACHE_PATH = 'ucd-cache'
 
 INCH = D('300')
 POINT = INCH / D(72) # postscript DPI
@@ -73,6 +75,15 @@ SCRIPTS = (
 
 SCRIPTS = ' '.join(SCRIPTS).strip().split()
 
+class Char(object):
+    
+    def __init__(self, ccc, dt, gc, sc, ducet_key=None):
+        self.ccc = ccc
+        self.dt = dt
+        self.gc = gc
+        self.sc = sc
+        self.ducet_key = ducet_key
+
 class UCDTarget(object):
     '''\
     An lxml target for parsing the UCD in XML. Produces a dictionary keyed to
@@ -81,7 +92,6 @@ class UCDTarget(object):
     
     UCD_NS = 'http://www.unicode.org/ns/2003/ucd/1.0'
     UCD = '{%s}' % UCD_NS
-    Char = namedtuple('char', 'ccc dt gc sc ducet_key')
     
     def __init__(self):
         self.parents = []
@@ -123,7 +133,7 @@ class UCDTarget(object):
         except KeyError:
             pprint((codepoint, attributes))
             sys.exit()
-        props = self.Char(
+        props = Char(
             attributes['ccc'],
             attributes['dt'],
             attributes['gc'],
@@ -164,7 +174,7 @@ class UCDTarget(object):
         return self.u
 
 # add collation keys from the DUCET
-def _add_uca_keys():
+def _add_uca_keys(UCD):
     "reading DUCET from %s" % DUCET_PATH
     ducet = open(DUCET_PATH)
     for line in ducet:
@@ -229,7 +239,7 @@ def _add_uca_keys():
             for k in keys:
                 sort_key += k['weights'][l]
         
-        UCD[char] = UCDTarget.Char(
+        UCD[char] = Char(
             UCD[char].ccc,
             UCD[char].dt,
             UCD[char].gc,
@@ -239,15 +249,34 @@ def _add_uca_keys():
         
     ducet.close()
 
-UCD = None
+def parse_ucd():
 
-print "parsing UCD from %s" % UCD_PATH
+    ucd_data = None
+    try:
+        with open(UCD_CACHE_PATH, 'rb') as ucd_cache:
+            print "reading cached UCD data...",
+            sys.stdout.flush()
+            ucd_data = pickle.load(ucd_cache)
+            print " done!"
+    except IOError:
+        print "can't read existing UCD cache file"
+    except EOFError:
+        print "can't read existing UCD cache file"
+    
+    if ucd_data is None:
+        print "parsing UCD from %s" % UCD_PATH
 
-ucd_parser = etree.XMLParser(target=UCDTarget())
-UCD = etree.XML(open(UCD_PATH).read(), ucd_parser)
-_add_uca_keys()
+        ucd_parser = etree.XMLParser(target=UCDTarget())
+        ucd_data = etree.XML(open(UCD_PATH).read(), ucd_parser)
+        _add_uca_keys(ucd_data)
+        
+        with open(UCD_CACHE_PATH, 'wb') as ucd_cache:
+            print "caching UCD data in '%s'" % UCD_CACHE_PATH
+            pickle.dump(ucd_data, ucd_cache, pickle.HIGHEST_PROTOCOL)
 
-def ucd_get_characters():
+    return ucd_data
+
+def ucd_get_characters(UCD):
     
     result = []
     
@@ -441,7 +470,9 @@ if __name__ == '__main__':
         filename = 'all.pdf'
     out = open(filename, 'wb')
     
-    chars = ucd_get_characters()
+    UCD = parse_ucd()
+
+    chars = ucd_get_characters(UCD)
 
     characters = D(len(chars))
     
