@@ -1,1 +1,28 @@
-requires pyicu and lxml
+A python script to generate a poster of Unicode characters. Outputs PDF.
+
+By default, it generates a 3-foot high poster (typical size for large-format
+printers) of all printable Unicode characters. You can also generate posters of
+different heights and with characters from particular scripts using command line
+arguments. Note that you can specify multiple scripts using multiple '--script'
+args.
+
+Requires the lxml, cairo, pango, and pangocairo python modules. Also requires a
+copy of the Unicode Character Database (in the form of a flat XML file), and a
+copy of the Default Unicode Collation Element Table ("allkeys.txt"). These can
+be found at
+
+http://www.unicode.org/Public/6.1.0/ucdxml/ucd.all.flat.zip
+
+and
+
+http://www.unicode.org/Public/UCA/6.1.0/allkeys.txt
+
+for the 6.1.0 version of Unicode. You'll need to unzip the ucd file. Using these
+files directly means you can generate posters for new versions of Unicode as
+soon as they're available! (Although, finding fonts may be tough.)
+
+Note that if you want a character to actually have a glyph of some sort on the
+poster, pango will need to find a font with a glyph for it. See the pango docs
+for details, but the simplest way to add fonts it can find is to just put them
+in your $HOME/.fonts directory.
+
