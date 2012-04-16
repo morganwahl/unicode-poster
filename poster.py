@@ -33,8 +33,6 @@ CELL_WIDTH = (CELL_HEIGHT / CELL_ASPECT[1]) * CELL_ASPECT[0]
 #GENERIC_BASE = u"\u25cc"
 GENERIC_BASE = u""
 
-DUCET_PATH = "../ucd/allkeys.txt"
-
 SCRIPTS = (
     #"Xsux Xpeo Ugar Egyp", # 0xx
 
@@ -173,9 +171,9 @@ class UCDTarget(object):
         return self.u
 
 # add collation keys from the DUCET
-def _add_uca_keys(UCD):
-    "reading DUCET from %s" % DUCET_PATH
-    ducet = open(DUCET_PATH)
+def _add_uca_keys(ducet_path, UCD):
+    "reading DUCET from %s" % ducet_path
+    ducet = open(ducet_path)
     for line in ducet:
         original_line = line
         # strip comments
@@ -248,7 +246,7 @@ def _add_uca_keys(UCD):
         
     ducet.close()
 
-def parse_ucd(ucd_path):
+def parse_ucd(ucd_path, ducet_path):
 
     ucd_data = None
     try:
@@ -267,7 +265,7 @@ def parse_ucd(ucd_path):
 
         ucd_parser = etree.XMLParser(target=UCDTarget())
         ucd_data = etree.XML(open(ucd_path).read(), ucd_parser)
-        _add_uca_keys(ucd_data)
+        _add_uca_keys(ducet_path, ucd_data)
         
         with open(UCD_CACHE_PATH, 'wb') as ucd_cache:
             print "caching UCD data in '%s'" % UCD_CACHE_PATH
@@ -455,6 +453,11 @@ if __name__ == '__main__':
         dest= 'ucd_path',
         default= u'ucd',
         help= "path of the Unicode Character Database to use. defaults to 'ucd'.",
+    parser.add_argument(
+        '-d, --ducet',
+        dest= 'ducet_path',
+        default= u'allkeys.txt',
+        help= u'path of the Default Unicode Collation Element Table to use. defaults to \'allkeys.txt\'.',
     )
     parser.add_argument(
         '-o, --outfile',
@@ -465,7 +468,7 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
     
-    UCD = parse_ucd(args.ucd_path)
+    UCD = parse_ucd(args.ucd_path, args.ducet_path)
 
     chars = ucd_get_characters(UCD)
 
