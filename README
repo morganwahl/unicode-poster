@@ -25,4 +25,3 @@ Note that if you want a character to actually have a glyph of some sort on the
 poster, pango will need to find a font with a glyph for it. See the pango docs
 for details, but the simplest way to add fonts it can find is to just put them
 in your $HOME/.fonts directory.
-
