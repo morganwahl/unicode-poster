@@ -79,7 +79,7 @@ SCRIPTS = (
 SCRIPTS = ' '.join(SCRIPTS).strip().split()
 
 class Char(object):
-    
+
     def __init__(self, ccc, dt, gc, sc, ducet_key=None):
         self.ccc = ccc
         self.dt = dt
@@ -92,14 +92,14 @@ class UCDTarget(object):
     An lxml target for parsing the UCD in XML. Produces a dictionary keyed to
     numeric codepoints.
     '''
-    
+
     UCD_NS = 'http://www.unicode.org/ns/2003/ucd/1.0'
     UCD = '{%s}' % UCD_NS
-    
+
     def __init__(self):
         self.parents = []
         self.u = [None] * 0x10ffff
-    
+
     @staticmethod
     def derive_weight(cp, UIdeo):
         base = 0xfbc0
@@ -115,10 +115,10 @@ class UCDTarget(object):
                 base = 0xfb40
             else:
                 base = 0xfb80
-        
+
         aaaa = base + (cp >> 15)
         bbbb = (cp & 0x7fff) | 0x8000;
-        
+
         ducet_key = ("%04X" * 6) % (
             aaaa,
             bbbb,
@@ -127,9 +127,9 @@ class UCDTarget(object):
             0x2,
             0,
         )
-        
+
         return ducet_key
-    
+
     def process_char(self, codepoint, attributes):
         try:
             UIdeo = attributes['UIdeo']
@@ -144,14 +144,14 @@ class UCDTarget(object):
             self.derive_weight(codepoint, UIdeo),
         )
         self.u[codepoint] = props
-    
+
     def data(self, data):
         if self.parents == [
             self.UCD + 'ucd',
             self.UCD + 'description',
         ]:
             print "Parsing UCD described as: \"%s\"" % data
-    
+
     def start(self, tag, attrib):
         if tag == self.UCD + 'char' and self.parents == [
             self.UCD + 'ucd',
@@ -167,12 +167,12 @@ class UCDTarget(object):
                 pprint(attrib)
                 raise Exception("Can't figure out char entry!")
         self.parents.append(tag)
-    
+
     def end(self, tag):
         if tag != self.parents[-1]:
             raise Exception("Malformed XML! Got </%s>, was expecting </%s>." % (tag, self.parents[-1]))
         self.parents.pop()
-    
+
     def close(self):
         return self.u
 
@@ -190,34 +190,34 @@ def _add_uca_keys(ducet_path, UCD):
         # skip blanks
         if not line:
             continue
-        
+
         if line[0] == '@':
             version_match = re.search(r'^@version\s*([^.]*)\.([^.]*)\.([^.]*)$', line)
             if version_match:
                 (major, minor, variant) = version_match.groups()
                 print "Reading DUCET version %s.%s.%s" % (major, minor, variant)
                 continue
-            
+
             other_match = re.search(r'^@(variable|backwards|forwards)', line)
             if other_match:
                 raise Exception("This script can't process a DUCET file with a '%s' directive!" % other_match.group(0))
-            
+
             # line starts with '@' but isn't understood
             raise Exception("Unrecognized directive %s!" % re.search(r'^@(.*)$', line).group(0))
-        
+
         # TODO check that line matches a regex summarizing the assumptions below
-        
+
         chars, keys = line.split(';', 1)
-        
+
         chars = chars.strip()
         chars = chars.split()
         chars = map(lambda x: int(x, 0x10), chars)
-        
+
         # we don't care about multi-char entries
         if len(chars) > 1:
             continue
         char = chars[0]
-        
+
         keys = keys.strip()
         keys = keys[1:-1] # remove the trailing and leading '[' and ']'
         keys = keys.split('][')
@@ -233,7 +233,7 @@ def _add_uca_keys(ducet_path, UCD):
             keys,
         )
         # we don't care about variable weighting, so the 'alt' doesn't matter
-        
+
         sort_key = ''
         max_level = 0
         for k in keys:
@@ -241,7 +241,7 @@ def _add_uca_keys(ducet_path, UCD):
         for l in range(max_level):
             for k in keys:
                 sort_key += k['weights'][l]
-        
+
         UCD[char] = Char(
             UCD[char].ccc,
             UCD[char].dt,
@@ -249,7 +249,7 @@ def _add_uca_keys(ducet_path, UCD):
             UCD[char].sc,
             sort_key,
         )
-        
+
     ducet.close()
 
 def parse_ucd(ucd_path, ducet_path):
@@ -265,14 +265,14 @@ def parse_ucd(ucd_path, ducet_path):
         print "can't read existing UCD cache file"
     except EOFError:
         print "can't read existing UCD cache file"
-    
+
     if ucd_data is None:
         print "parsing UCD from %s" % ucd_path
 
         ucd_parser = etree.XMLParser(target=UCDTarget())
         ucd_data = etree.XML(open(ucd_path).read(), ucd_parser)
         _add_uca_keys(ducet_path, ucd_data)
-        
+
         with open(UCD_CACHE_PATH, 'wb') as ucd_cache:
             print "caching UCD data in '%s'" % UCD_CACHE_PATH
             pickle.dump(ucd_data, ucd_cache, pickle.HIGHEST_PROTOCOL)
@@ -280,9 +280,9 @@ def parse_ucd(ucd_path, ducet_path):
     return ucd_data
 
 def ucd_get_characters(UCD, scripts=None):
-    
+
     result = []
-    
+
     for p in range(len(UCD)):
         props = UCD[p]
         if props is None:
@@ -301,23 +301,23 @@ def ucd_get_characters(UCD, scripts=None):
         if not scripts is None:
             if props.sc not in scripts:
                 continue
-        
+
         result.append(unichr(p))
-    
+
     result.sort(key=lambda c: UCD[ord(c[0])].ducet_key)
-    
+
     return result
 
 def draw_small_cell(character, cairo_context):
     c, cr = character, cairo_context
     pcr = pangocairo.CairoContext(cr)
-    
+
     point = ord(character[0])
     if UCD[point].ccc != 0:
         character = GENERIC_BASE + character
-    
+
     cr.set_source_rgb(0, 0, 0)
-    
+
     if UCD[point].dt != 'none':
         #dt = etree.SubElement(group, SVG + 'text',
         #    x= unicode(.2),
@@ -361,7 +361,7 @@ def draw_small_cell(character, cairo_context):
         cr.move_to(D('1.5') - (w / 2), 2 - (h / 2))
         pcr.show_layout(text)
     cr.restore()
-    
+
     #gc = etree.SubElement(group, SVG + 'text',
     #    x= unicode(0 + .2),
     #    y= unicode(4 - .2),
@@ -384,7 +384,7 @@ def draw_small_cell(character, cairo_context):
     cr.move_to((0 + D('.1')), (4 - D('.1')) - h)
     pcr.show_layout(gc)
     cr.restore()
-    
+
     cr.save()
     cr.set_source_rgb(.4, .4, .4)
     sc = pcr.create_layout()
@@ -417,17 +417,17 @@ def draw_small_cell(character, cairo_context):
     cr.restore()
 
 def render_cairo(out, chars, width, height, cell_width, cell_height):
-    
+
     s = cairo.PDFSurface(out, width / POINT, height / POINT)
-    
+
     cr = cairo.Context(s)
     # scale to pixels
     cr.scale(1 / POINT, 1 / POINT)
-    
+
     # white background
     cr.set_source_rgb(1, 1, 1)
     cr.paint()
-    
+
     row = 0
     col = 0
     cr.scale(
@@ -444,7 +444,7 @@ def render_cairo(out, chars, width, height, cell_width, cell_height):
         )
         draw_small_cell(c, cr)
         cr.restore()
-        
+
         col += 1
         if col == columns:
             col = 0
@@ -488,13 +488,13 @@ if __name__ == '__main__':
         help= 'height of the poster, in inches. defaults to 36.',
     )
     args = parser.parse_args()
-    
+
     UCD = parse_ucd(args.ucd_path, args.ducet_path)
 
     chars = ucd_get_characters(UCD, args.scripts)
 
     characters = D(len(chars))
-    
+
     height = args.height * INCH
     rows = (height / (D('.25') * INCH)).quantize(1, rounding=ROUND_DOWN) # each cell will be at least 1/2" tall
     cell_height = height / rows
@@ -504,14 +504,14 @@ if __name__ == '__main__':
     width = (columns * cell_width).quantize(1, rounding=ROUND_UP)
     area = width * height
     cell_area = cell_width * cell_height
-    
+
     print "poster: %d x %d = %d" % (width, height, area)
     print "poster: %d\" x %d\" = %f sq/ ft." % (width / INCH, height / INCH, (width * height) / ((12 ** 2) * (INCH ** 2)))
     print "cell: %f x %f = %f" % (cell_width, cell_height, cell_area)
     print "chars: %d x %d = %d, %d" % (columns, rows, columns * rows, len(chars))
     print "width: %d x %f = %f, %d" % (columns, cell_width, cell_width * columns, width)
     print "height: %d x %f = %f, %d" % (rows, cell_height, cell_height * rows, height)
-    
+
     with open(args.outfile, 'wb') as out:
         render(out, chars, width, height, cell_width, cell_height)
 
