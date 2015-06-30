@@ -28,41 +28,51 @@ CELL_ASPECT = (D(3), D(4))
 GENERIC_BASE = u""
 
 # TODO get this from the UCD
-# Up-to-date as of 2012-04-16
+# Up-to-date as of 2015-06-30
+# http://unicode.org/iso15924/iso15924-codes.html
 SCRIPTS = (
-    "Xsux Xpeo Ugar Egyp", # 0xx
+    "Xsux Xpeo Ugar Egyp Hluw Sgnw", # 0xx
 
-    "Mero Merc Sarb", # 10x
+    "Mero Merc Sarb Narb", # 10x
     "Phnx Lydi", # 11x
-    "Tfng Samr Armi Hebr", # 12x
-    "Prti Phli Avst Syrc", # 13x
-    "Mand Mong", # 15x
+    "Tfng Samr Armi Hebr Palm Hatr", # 12x
+    "Prti Phli Phlp Avst Syrc Mani", # 13x
+    "Mand Mong", # 14x
+    "Nbat", # 15x
     "Arab Nkoo", # 16x
-    "Thaa Orkh", # 17x
+    "Thaa Orkh Hung", # 17x
+    "Mroo", # 19x
 
     "Grek Cari Lyci Copt Goth", # 20x
     "Ital Runr Ogam Latn", # 21x
-    "Cyrl Glag", # 22x
-    "Armn", # 23x
+    "Cyrl Glag Elba Perm", # 22x
+    "Armn Aghb", # 23x
     "Geor", # 24x
-    "Dsrt", # 25x
-    "Osma Olck", # 26x
+    "Dsrt Bass", # 25x
+    "Osma Olck Wara Pauc", # 26x
     "Shaw Plrd Bopo Hang", # 28x
 
-    "Brah Khar", # 30x
-    "Guru Deva Sylo Kthi Shrd", # 31x
-    "Gujr Takr Beng Orya", # 32x
-    "Tibt Phag Lepc Limb Mtei", # 33x
-    "Telu Saur Knda Taml Mlym Sinh Cakm", # 34x
+    "Brah Sidd Khar", # 30x
+    "Guru Mahj Deva Sylo Kthi Sind Shrd", # 31x
+    "Gujr Takr Khoj Mult Modi Beng Tirh Orya", # 32x
+    "Tibt Phag Lepc Limb Mtei Ahom", # 33x
+    "Telu Gran Saur Knda Taml Mlym Sinh Cakm", # 34x
     "Mymr Lana Thai Tale Talu Khmr Laoo Kali Cham Tavt", # 35x
     "Bali Java Sund Rjng Batk Bugi", # 36x
     "Tglg Hano Buhd Tagb", # 37x
     "Sora Lisu", # 39x
-    
-    "Linb Cprt Hira Kana Hrkt Ethi Bamu Cans Cher Yiii Vaii", # 4xx
-    
+
+    "Lina Linb Cprt", # 40x
+    "Hira Kana", # 41x
+    "Ethi Bamu Mend", # 43x
+    "Cans Cher", # 44x
+    "Yiii", # 45x
+    "Vaii", # 47x
+
     "Hani Brai", # 5xx
-    
+
+    "Dupl", # 7xx
+
     "Zinh Zyyy", # 9xx
 )
 
