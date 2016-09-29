@@ -1,0 +1,5 @@
+On ubuntu 14.04:
+
+python-cairo
+python-gtk2
+python-lxml
